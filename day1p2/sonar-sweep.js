@@ -15,4 +15,4 @@ input.forEach((v, i) => {
 
 console.log(numIncreases);
 
-// Correct answer: 
+// Correct answer: 1728
