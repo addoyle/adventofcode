@@ -1,4 +1,3 @@
-const { lines } = require('../common');
 const common = require('../common');
 
 const input = common.lines('input');
