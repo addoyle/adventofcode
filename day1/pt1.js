@@ -6,7 +6,6 @@ let numIncreases = 0;
 
 input.forEach((v, i) => {
     numIncreases += i > 0 && v > p ? 1 : 0;
-    console.log(p, v, numIncreases)
     p = v;
 });
 

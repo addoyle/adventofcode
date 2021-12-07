@@ -9,7 +9,6 @@ input.forEach((v, i) => {
 
     const window = v + input[i - 1] + input[i - 2];
     numIncreases += window > p ? 1 : 0;
-    console.log(p, window, numIncreases)
     p = window;
 });
 
