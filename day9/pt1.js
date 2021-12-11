@@ -1,6 +1,6 @@
-const common = require("../common.js");
+const common = require('../common.js');
 
-const grid = common.lines("input").map((l) => l.split("").map(Number));
+const grid = common.lines('input').map((l) => l.split('').map(Number));
 const lowPoints = [];
 
 const isLowPoint = (row, col) =>
