@@ -19,9 +19,11 @@ grid.forEach((row, i) =>
 
 const getBasinSize = (pt, basin = new Set()) => {
   if (
-    pt[0] < 0 || pt[0] >= grid.length || 
-    pt[1] < 0 || pt[1] >= grid[0].length || 
-    basin.has(pt.join(',')) || 
+    pt[0] < 0 ||
+    pt[0] >= grid.length ||
+    pt[1] < 0 ||
+    pt[1] >= grid[0].length ||
+    basin.has(pt.join(',')) ||
     grid[pt[0]][pt[1]] === 9
   ) {
     return;
@@ -36,10 +38,14 @@ const getBasinSize = (pt, basin = new Set()) => {
   getBasinSize([pt[0], pt[1] + 1], basin); // right
 
   return [...basin];
-}
+};
 
 console.log(
-  lowPoints.map(pt => getBasinSize(pt).length).sort((a, b) => b - a).slice(0, 3).reduce((prod, n) => prod * n, 1)
+  lowPoints
+    .map(pt => getBasinSize(pt).length)
+    .sort((a, b) => b - a)
+    .slice(0, 3)
+    .reduce((prod, n) => prod * n, 1)
 );
 
 // Correct answer: 1168440
