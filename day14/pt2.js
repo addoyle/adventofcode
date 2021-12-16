@@ -1,20 +1,44 @@
 const common = require('../common.js');
 
-const lines = common.lines('input');
-const template = lines.shift();
-const replacements = lines.filter(l => l).map(l => l.split(' -> ')).reduce((o, p) => ({...o, [p[0]]: p[1]}), {});
-const steps = 40;
+const lines = common.lines('sample');
+const template = lines.shift().split('');
+const reps = lines
+  .filter(l => l)
+  .map(l => l.split(' -> '))
+  .reduce((o, p) => ({ ...o, [p[0]]: p[1] }), {});
+const steps = 10;
 
-let tmpl = template;
+// Get initial counts of pairs from template
+const counts = template.reduce(
+  (o, c, i) =>
+    i < template.length - 1
+      ? { ...o, [c + template[i + 1]]: (o[c] || 0) + 1 }
+      : o,
+  {}
+);
+console.log(counts);
+
 for (let step = 0; step < steps; step++) {
-  tmpl = tmpl.split('')
-    .map((c, i) => i < tmpl.length - 1
-      ? c + (replacements[c + tmpl.charAt(i + 1)] || '')
-      : c
-    ).join('')
+  Object.assign(
+    counts,
+    Object.entries(counts).reduce(
+      (o, [k, v]) => ({
+        ...o,
+        [k[0] + reps[k]]: (o[k[0] + reps[k]] || 0) + v,
+        [reps[k] + k[1]]: (o[reps[k] + k[1]] || 0) + v
+      }),
+      {}
+    )
+  );
+
+  console.log(counts);
 }
 
-const vals = Object.values(tmpl.split('').reduce((o, c) => ({...o, [c]: (o[c] || 0) + 1}), {})).sort((a, b) => a - b);
+const letterCounts = Object.entries(counts)
+  .map(e => [e[0][0], e[1]])
+  .reduce((o, [k, v]) => ({ ...o, [k]: (o[k] || 0) + v }), {});
+console.log(letterCounts);
+const vals = Object.values(letterCounts).sort((a, b) => a - b);
 
 console.log(vals.slice(-1) - vals[0]);
 
