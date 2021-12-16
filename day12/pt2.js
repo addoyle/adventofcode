@@ -14,7 +14,8 @@ const caves = [];
 lines.forEach(([a, b]) => {
   // Create nodes if they don't already exist
   caves.push(
-    ...[a, b].filter(name => !caves.map(n => n.name).includes(name))
+    ...[a, b]
+      .filter(name => !caves.map(n => n.name).includes(name))
       .map(name => new Node(name))
   );
 
@@ -43,21 +44,21 @@ const takePath = (node, route = []) => {
   if (
     node.small &&
     route.some(n => n.name === node.name) &&
-    route.filter(n => n.small).length > 
+    route.filter(n => n.small).length >
       new Set(route.filter(n => n.small).map(n => n.name)).size
   ) {
-    return
-  };
+    return;
+  }
 
   // Add node to route
-  route.push(node)
+  route.push(node);
 
   // Take paths
   node.paths.forEach(n => takePath(n, [...route]));
-}
+};
 // Start exploring!
 takePath(caves.find(n => n.name === 'start'));
 
 console.log(routes.size);
 
-// Correct answer: 
+// Correct answer:
