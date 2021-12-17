@@ -1,7 +1,7 @@
 const common = require('../common.js');
 
 const rawBits = common
-  .lines('sample1')[0]
+  .lines('sample2')[0]
   .split('')
   .map(c => parseInt(c, 16).toString(2).padStart(4, '0'))
   .join('');
@@ -11,12 +11,11 @@ const TYPE_LITERAL = 4;
 const getPackets = bits => {
   let i = 0;
 
-  const packets = [];
+  let headPacket;
   let packet = {};
   let parentPacket = {};
 
   while (i < bits.length) {
-    console.log(parentPacket);
     // Rest of the bits are 0, nothing left to do
     if (parseInt(bits.slice(i), 2) === 0) {
       break;
@@ -24,12 +23,18 @@ const getPackets = bits => {
 
     // No version yet, grab next 3 bits
     if (!packet.version) {
+      // Set the head packet
+      if (!headPacket) {
+        headPacket = packet;
+      }
+
       if (
         parentPacket.version &&
         parentPacket.subPackets.length <= parentPacket.total
       ) {
         parentPacket.subPackets.push(packet);
       }
+
       packet.version = parseInt(bits.slice(i, i + 3), 2);
       i += 3;
     }
@@ -46,17 +51,13 @@ const getPackets = bits => {
       // Anything else, operator
       else {
         const newPacket = {};
-        if (parentPacket.version) {
-          parentPacket.subPackets.push(newPacket);
-        }
-        parentPacket = { ...packet };
+        parentPacket = packet;
         packet = newPacket;
         parentPacket.subPackets = [];
         parentPacket.isNumPackets = +bits[i++];
 
         // Next 11 bits contains the number of packets
         if (parentPacket.isNumPackets) {
-          console.log('numPackets');
           parentPacket.total = parseInt(bits.slice(i, i + 11), 2);
           i += 11;
         }
@@ -65,7 +66,6 @@ const getPackets = bits => {
           const length = parseInt(bits.slice(i, i + 15), 2);
           i += 15;
           parentPacket.subPackets = getPackets(bits.slice(i, i + length));
-          packets.push(parentPacket);
           i += length;
         }
       }
@@ -84,7 +84,7 @@ const getPackets = bits => {
     }
   }
 
-  return packets;
+  return headPacket;
 };
 
 console.log(getPackets(rawBits));
