@@ -1,12 +1,14 @@
 const common = require('../common.js');
 
 const rawBits = common
-  .lines('sample2')[0]
+  .lines('input')[0]
   .split('')
   .map(c => parseInt(c, 16).toString(2).padStart(4, '0'))
   .join('');
 
 const TYPE_LITERAL = 4;
+
+let versionSum = 0;
 
 const getPackets = bits => {
   let i = 0;
@@ -22,25 +24,25 @@ const getPackets = bits => {
     }
 
     // No version yet, grab next 3 bits
-    if (!packet.version) {
+    if (packet.version === undefined) {
       // Set the head packet
       if (!headPacket) {
         headPacket = packet;
       }
 
-      if (
-        parentPacket.version &&
-        parentPacket.subPackets.length <= parentPacket.total
-      ) {
-        parentPacket.subPackets.push(packet);
+      if (parentPacket.version !== undefined) {
+        if (parentPacket.subPackets.length <= parentPacket.total) {
+          parentPacket.subPackets.push(packet);
+        }
       }
 
       packet.version = parseInt(bits.slice(i, i + 3), 2);
+      versionSum += packet.version;
       i += 3;
     }
 
     // No type yet, grab next 3 bits
-    if (!packet.type) {
+    if (packet.type === undefined) {
       packet.type = parseInt(bits.slice(i, i + 3), 2);
       i += 3;
 
@@ -50,23 +52,23 @@ const getPackets = bits => {
       }
       // Anything else, operator
       else {
-        const newPacket = {};
-        parentPacket = packet;
-        packet = newPacket;
-        parentPacket.subPackets = [];
-        parentPacket.isNumPackets = +bits[i++];
+        const isNumPackets = +bits[i++];
 
         // Next 11 bits contains the number of packets
-        if (parentPacket.isNumPackets) {
-          parentPacket.total = parseInt(bits.slice(i, i + 11), 2);
+        if (isNumPackets) {
+          packet.subPackets = [];
+          packet.total = parseInt(bits.slice(i, i + 11), 2);
+          parentPacket = packet;
+          packet = {};
           i += 11;
         }
         // Next 15 bits represents the length of bits containing packets
         else {
           const length = parseInt(bits.slice(i, i + 15), 2);
           i += 15;
-          parentPacket.subPackets = getPackets(bits.slice(i, i + length));
+          packet.subPackets = getPackets(bits.slice(i, i + length));
           i += length;
+          packet = {};
         }
       }
     }
@@ -79,6 +81,8 @@ const getPackets = bits => {
 
       if (!packet.hasMore) {
         packet.value = parseInt(packet.groups.join(''), 2);
+        delete packet.groups;
+        delete packet.hasMore;
         packet = {};
       }
     }
@@ -87,6 +91,8 @@ const getPackets = bits => {
   return headPacket;
 };
 
-console.log(getPackets(rawBits));
+getPackets(rawBits);
 
-// Correct answer:
+console.log(versionSum);
+
+// Correct answer: 955
