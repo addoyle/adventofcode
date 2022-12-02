@@ -102,3 +102,6 @@ dist
 
 # TernJS port file
 .tern-port
+
+# Puzzle inputs are in .txt files. They do not need to be checked in.
+*.txt
