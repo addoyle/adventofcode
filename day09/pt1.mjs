@@ -42,24 +42,6 @@ lines('./input.txt')
     })
   );
 
-const min = [...visited]
-  .map(pt => pt.split(',').map(i => parseInt(i)))
-  .reduce(
-    (min, pt) => [Math.min(min[0], pt[0]), Math.min(min[1], pt[1])],
-    [0, 0]
-  );
-console.log(
-  [...visited]
-    .map(pt => pt.split(',').map(i => parseInt(i)))
-    .reduce((arr, pt) => {
-      if (!arr[pt[1] - min[1]]) {
-        arr[pt[1] - min[1]] = [];
-      }
-      arr[pt[1] - min[1]][pt[0] - min[0]] = '#';
-      return arr;
-    }, [])
-    .map(row => [...row].map(c => c || ' ').join(''))
-    .join('\n')
-);
-
 console.log(visited.size);
+
+// Answer: 6354
