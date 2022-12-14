@@ -6,7 +6,7 @@ const a = 'a'.charCodeAt(0);
 const S = 'S'.charCodeAt(0);
 const E = 'E'.charCodeAt(0);
 
-const grid = lines('./sample.txt').map(line =>
+const grid = lines('./input.txt').map(line =>
   line
     .split('')
     .map(c => c.charCodeAt(0) - a)
@@ -24,9 +24,8 @@ for (let y = 0; y < grid.length; y++) {
     }
   }
 }
-console.log({ start, end });
 
-const validSteps = ([x, y], seen) => {
+const nextSteps = ([x, y]) => {
   const nbs = [];
   [
     [x - 1, y],
@@ -34,48 +33,57 @@ const validSteps = ([x, y], seen) => {
     [x, y - 1],
     [x, y + 1]
   ].forEach(([dx, dy]) => {
-    console.log({ dx, dy });
+    // console.log({ dx, dy });
     if (
       grid[dy] !== undefined &&
       grid[dy][dx] !== undefined &&
-      [0, 1].includes(grid[dy][dx] - grid[y][x]) &&
-      !seen.has(`${dx},${dy}`)
+      [0, 1].includes(grid[dy][dx] - grid[y][x]) //&&
+      // !seen.has(`${dx},${dy}`)
     ) {
       nbs.push([dx, dy]);
+      // seen.add(`${dx},${dy}`);
     }
   });
+  // console.log(nbs);
   return nbs;
 };
 
-const climb = () => {
-  const seen = new Set([`${start[0]},${start[1]}`]);
-  let steps = 0;
-  let cur = [start];
-  let next = [];
-  // while (cur.length) {}
-  // console.log(validSteps(cur[0], seen));
-};
+const seen = new Set([`${start[0]},${start[1]}`]);
+let cur = [start];
+let next = [];
+let steps;
+for (steps = 0; cur.length; steps++) {
+  cur
+    .map(nextSteps)
+    .flat()
+    .forEach(([x, y]) => {
+      // const [x, y] = p;
+      // console.log({ x, y });
+      if (!seen.has(`${x},${y}`)) {
+        next.push([x, y]);
+      }
+      seen.add(`${x},${y}`);
+    });
+
+  // console.log({ next, seen });
+
+  cur = next;
+  next = [];
+
+  // cur = cur.map(p => nextSteps(p, seen)).flat();
+  // console.log(cur);
+}
+
+console.log(
+  (g => {
+    [...seen]
+      .map(p => p.split(',').map(n => parseInt(n)))
+      .forEach(([x, y]) => (g[y][x] = '#'));
+    return g;
+  })(grid.map(r => r.map(c => String.fromCharCode(c + a))))
+    .map(r => r.join(''))
+    .join('\n')
+);
 
 // Start the climb!
-climb();
-
-// const shortPaths = paths.filter(p => p.length === shortestPath);
-
-const drawPath = path => {
-  const g = grid.map(r => r.map(_ => ' '));
-  let [x, y] = startPoint;
-  path.forEach(p => {
-    g[y][x] = p;
-    p === '^' && y--;
-    p === 'v' && y++;
-    p === '<' && x--;
-    p === '>' && x++;
-  });
-  g[y][x] = 'E';
-  console.log(g.map(r => r.join('')).join('\n'));
-};
-
-// Draw path
-// shortPaths.forEach(drawPath);
-
-// console.log({ shortestPath });
+console.log(steps);
