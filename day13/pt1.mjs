@@ -1,23 +1,45 @@
-[1,1,3,1,1]
-[1,1,5,1,1]
+import { readFileSync } from 'fs';
 
-[[1],[2,3,4]]
-[[1],4]
+const pairs = readFileSync('./input.txt', 'utf8').split('\n\n').map(pair => pair.split('\n').map(packet => JSON.parse(packet)));
 
-[9]
-[[8,7,6]]
+const cmpPackets = (left, right) => {
+  // Compare if both ints
+  if (!Array.isArray(left) && !Array.isArray(right)) {
+    return left - right;
+  }
 
-[[4,4],4,4]
-[[4,4],4,4,4]
+  // Both are arrays, compare
+  else if (Array.isArray(left) && Array.isArray(right)) {
+    for (let i = 0; i < left.length; i++) {
+      // Right ran out of stuff first
+      if (right[i] === undefined) {
+        return 1;
+      }
 
-[7,7,7,7]
-[7,7,7]
+      const res = cmpPackets(left[i], right[i]);
+      if (res !== 0) {
+        return res;
+      }
+    }
+    // Left ran out of stuff first
+    if (left.length < right.length) {
+      return -1;
+    }
+  }
 
-[]
-[3]
+  // Mixed terms
+  else if (Array.isArray(left)) {
+    return cmpPackets(left, [right]);
+  }
+  else if (Array.isArray(right)) {
+    return cmpPackets([left], right);
+  }
 
-[[[]]]
-[[]]
+  // Default case if everything else fails
+  return 0;
+}
 
-[1,[2,[3,[4,[5,6,7]]]],8,9]
-[1,[2,[3,[4,[5,6,0]]]],8,9]
+console.log(pairs.map(([left, right]) => cmpPackets(left, right))
+            .reduce((sum, diff, i) => sum + (diff < 0 ? i + 1 : 0), 0));
+
+// Answer: 6070
