@@ -33,18 +33,14 @@ const nextSteps = ([x, y]) => {
     [x, y - 1],
     [x, y + 1]
   ].forEach(([dx, dy]) => {
-    // console.log({ dx, dy });
     if (
-      grid[dy] !== undefined &&
+      grid[dy] &&
       grid[dy][dx] !== undefined &&
-      [0, 1].includes(grid[dy][dx] - grid[y][x]) //&&
-      // !seen.has(`${dx},${dy}`)
+      grid[dy][dx] - grid[y][x] <= 1
     ) {
       nbs.push([dx, dy]);
-      // seen.add(`${dx},${dy}`);
     }
   });
-  // console.log(nbs);
   return nbs;
 };
 
@@ -57,23 +53,28 @@ for (steps = 0; cur.length; steps++) {
     .map(nextSteps)
     .flat()
     .forEach(([x, y]) => {
-      // const [x, y] = p;
-      // console.log({ x, y });
-      if (!seen.has(`${x},${y}`)) {
-        next.push([x, y]);
-      }
-      seen.add(`${x},${y}`);
-    });
+      const key = `${x},${y}`;
 
-  // console.log({ next, seen });
+      if (grid[y][x] === END) {
+        console.log(steps - 1);
+        process.exit(0);
+      }
+
+      if (!seen.has(key)) {
+        next.push([x, y]);
+        seen.add(key);
+      }
+    });
 
   cur = next;
   next = [];
-
-  // cur = cur.map(p => nextSteps(p, seen)).flat();
-  // console.log(cur);
 }
 
+console.log(' -- BEFORE -- ');
+console.log(
+  grid.map(r => r.map(c => String.fromCharCode(c + a)).join('')).join('\n')
+);
+console.log(' -- AFTER -- ');
 console.log(
   (g => {
     [...seen]
@@ -85,5 +86,5 @@ console.log(
     .join('\n')
 );
 
-// Start the climb!
+// Don't include the last step
 console.log(steps);
