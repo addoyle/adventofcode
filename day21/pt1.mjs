@@ -18,6 +18,6 @@ const monkeys = lines('input.txt').reduce((o, line) => {
     return o;
 }, {})
 
-console.log(monkeys['root']());
+console.log(monkeys.root());
 
 // Answer: 364367103397416
