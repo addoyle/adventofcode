@@ -18,7 +18,6 @@ console.log(
     .map(matches)
     .map(m => [m[0], m.slice(-1)[0]])
     .map(tips => tips.map(n => (isNaN(n) ? numWords.indexOf(n) : parseInt(n))))
-    // .map(tips => tips.join(','))
     .map(tips => parseInt(tips.join('')))
     .reduce((sum, n) => sum + n, 0)
 );
