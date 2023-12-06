@@ -29,35 +29,51 @@ class Node {
     }
   }
 
-  getNode(key) {
-    if (key >= this.src && key <= this.src + this.len) {
-      return this;
+  getRanges(key, len, ranges = []) {
+    if (len <= 0) {
+      return [];
     }
 
-    if (this.left && key < this.src) {
-      return this.left.getNode(key);
-    }
-    if (this.right && key > this.src) {
-      return this.right.getNode(key);
+    const addRange = (lower, upper, action = (k, l) => ranges.push([k, l])) => {
+      if (len > 0 && key >= lower && key < upper) {
+        const end = Math.min(upper, key + len);
+        len = end - key;
+        action(key, len);
+        key = end;
+      }
+    };
+
+    if (this.left) {
+      addRange(-Infinity, this.left.src);
+      addRange(this.left.src, this.left.src + this.left.len, (k, l) => this.left.getRanges(k, l, ranges));
+      addRange(this.left.src + this.left.len, this.src);
+    } else {
+      addRange(-Infinity, this.src);
     }
 
-    return;
-  }
+    addRange(this.src, this.src + this.len, (k, l) => ranges.push([this.dest + (k - this.src), l]));
 
-  get(key) {
-    const node = this.getNode(key);
-    return node ? node.dest + (key - node.src) : key;
+    if (this.right) {
+      addRange(this.src + this.len, this.right.src);
+      addRange(this.right.src, this.right.src + this.right.len, (k, l) => this.right.getRanges(k, l, ranges));
+      addRange(this.right.src + this.right.len, Infinity);
+    } else {
+      addRange(this.src + this.len, Infinity);
+    }
+
+    return ranges;
   }
 }
 
 const almanac = lines('./input.txt');
 
-const seeds = almanac
-  .shift()
-  .split(':')[1]
-  .trim()
-  .split(' ')
-  .map(n => parseInt(n));
+const seeds = [
+  ...almanac
+    .shift()
+    .split(':')[1]
+    .trim()
+    .matchAll(/(\d+) (\d+)/g)
+].map(m => m.slice(1, 3).map(n => parseInt(n)));
 almanac.shift();
 
 const hops = [];
@@ -77,10 +93,12 @@ while (almanac.length) {
 
 console.log(
   seeds
-    .map(seed => {
-      let cur = seed;
-      hops.forEach(hop => (cur = hop.get(cur)));
-      return cur;
+    .map(seedRange => {
+      let ranges = [seedRange];
+      hops.forEach(hop => {
+        ranges = ranges.map(range => hop.getRanges(...range)).flat();
+      });
+      return ranges.reduce((min, range) => Math.min(min, range[0]), Infinity);
     })
     .reduce((min, n) => Math.min(min, n), Infinity)
 );
