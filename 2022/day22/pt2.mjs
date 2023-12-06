@@ -1,6 +1,6 @@
 import { inspect } from 'node:util';
 
-import { lines } from '../common.mjs';
+import { lines } from '../../common.mjs';
 
 const RIGHT = 0;
 const DOWN = 1;
@@ -11,6 +11,8 @@ const nodes = [];
 const inputLines = lines('sample.txt');
 const path = [...inputLines.pop().match(/[A-Z]+|[0-9]+/g)];
 inputLines.pop();
+
+const turn = (cur, dir) => (cur + dir > 3 ? 0 : cur + dir < 0 ? 3 : cur + dir);
 
 class Node {
   x;
@@ -47,144 +49,68 @@ class Node {
     this.nbs[UP] = node;
   }
 
+  // [y, x]
+  get faceCoord() {
+    return [Math.floor(this.y / cubeSize), Math.floor(this.x / cubeSize)];
+  }
+
+  get faceKey() {
+    return `${this.faceCoord[0]}-${this.faceCoord[1]}`;
+  }
+
   toString() {
     return inspect(this, { breakLength: Infinity, getters: true });
   }
 }
 
 class Face {
+  x;
+  y;
+  dir;
   nw;
-  ne;
-  sw;
-  se;
-  done = false;
   static faces = {};
 
   constructor(node) {
-    this.nw = nodes[Math.floor(node.y / cubeSize) * cubeSize][Math.floor(node.x / cubeSize) * cubeSize];
-    this.ne = nodes[this.nw.y][this.nw.x + cubeSize - 1];
-    this.sw = nodes[this.nw.y + cubeSize - 1][this.nw.x];
-    this.se = nodes[this.sw.y][this.ne.x];
+    [this.y, this.x] = node.faceCoord;
+    this.nw = nodes[this.y * cubeSize][this.x * cubeSize];
+    this.se = nodes[(this.y + 1) * cubeSize - 1][(this.x + 1) * cubeSize - 1];
+    this.dir = UP;
   }
 
-  #lazyload(node, prop) {
+  #lazyload(node) {
     if (node) {
-      let value = new Face(node);
-      const key = `${value.nw.x / cubeSize}-${value.nw.y / cubeSize}`;
-      if (Face.faces[key]) {
-        value = Face.faces[key];
-      } else {
-        Face.faces[key] = value;
-      }
-      Object.defineProperty(this, prop, { value });
-      return value;
+      return Face.faces[node.faceKey] || (Face.faces[node.faceKey] = new Face(node));
     }
   }
 
   // Lazily load neighbors to avoid stack overflow
   get right() {
-    return this.#lazyload(this.ne.right, 'right');
-    // if (this.ne.right) {
-    //   const right = new Face(this.ne.right);
-    //   Object.defineProperty(this, 'right', {});
-    // }
-    // return this.right || (this.ne.right && (this.right = new Face(this.ne.right)));
+    return this.#lazyload(this.se.right);
   }
   get down() {
-    return this.#lazyload(this.sw.down, 'down');
-    // return this.down || (this.sw.down && (this.down = new Face(this.sw.down)));
+    return this.#lazyload(this.se.down);
   }
   get left() {
-    return this.#lazyload(this.nw.left, 'left');
-    // return this.left || (this.nw.left && (this.left = new Face(this.nw.left)));
+    return this.#lazyload(this.nw.left);
   }
   get up() {
-    return this.#lazyload(this.nw.up, 'up');
-    // return this.up || (this.nw.up && (this.up = new Face(this.nw.up)));
+    return this.#lazyload(this.nw.up);
   }
 
-  get isComplete() {
-    return this.left && this.up && this.down && this.right;
+  get neighbors() {
+    return [this.right, this.down, this.left, this.up];
   }
 
-  connectToFace(edge, face, faceEdge) {
-    let tile,
-      dir = faceEdge,
-      faceTile,
-      faceDir = edge;
+  get dirRight() {}
+  get dirDown() {}
+  get dirLeft() {}
+  get dirUp() {}
 
-    if ((edge === 'left' && faceEdge == 'down') || (edge === 'up' && faceEdge === 'right')) {
-      tile = this.nw;
-      faceTile = face.se;
-    } else if ((edge === 'left' && faceEdge === 'up') || (edge === 'down' && faceEdge === 'right')) {
-      tile = this.sw;
-      faceTile = face.ne;
-    } else if ((edge === 'right' && faceEdge === 'down') || (edge === 'up' && faceEdge === 'left')) {
-      tile = this.ne;
-      faceTile = face.sw;
-    } else if ((edge === 'right' && faceEdge === 'up') || (edge === 'down' && faceEdge === 'left')) {
-      tile = this.se;
-      faceTile = face.nw;
-    } else if (edge === faceEdge) {
-      if (edge === 'up' || edge === 'down') {
-        dir = 'right';
-        faceDir = 'left';
-      } else {
-        dir = 'down';
-        faceDir = 'up';
-      }
-
-      if (edge === 'up') {
-        tile = this.nw;
-        faceTile = face.ne;
-      } else if (edge === 'down') {
-        tile = this.sw;
-        faceTile = face.se;
-      } else if (edge === 'left') {
-        tile = this.nw;
-        faceTile = face.sw;
-      } else if (edge === 'right') {
-        tile = this.ne;
-        faceTile = face.se;
-      }
-    } else {
-      // Should be up-down, right-left
-      if (edge === 'up' || edge === 'down') {
-        dir = faceDir = 'left';
-      } else {
-        dir = faceDir = 'down';
-      }
-      if (edge === 'up' && faceEdge === 'down') {
-        tile = this.nw;
-        faceTile = face.sw;
-      } else if (edge === 'down' && faceEdge === 'up') {
-        tile = this.sw;
-        faceTile = face.nw;
-      } else if (edge === 'left' && faceEdge === 'right') {
-        tile = this.nw;
-        faceTile = face.ne;
-      } else if (edge === 'right' && faceEdge === 'left') {
-        tile = this.ne;
-        faceTile = face.nw;
-      }
-    }
-
-    for (let i = 0; i < cubeSize; i++, tile = tile[dir], faceTile = faceTile[faceDir]) {
-      tile[edge] = faceTile;
-      faceTile[faceEdge] = tile;
-    }
+  rotate() {
+    this.dir = turn(this.dir, 1);
   }
-
-  toString() {
-    return nodes
-      .slice(this.nw.y, this.nw.y + cubeSize)
-      .map(row =>
-        row
-          .slice(this.nw.x, this.nw.x + cubeSize)
-          .map(n => (n.open ? '.' : '#'))
-          .join('')
-      )
-      .join('\n');
+  rotateCounter() {
+    this.dir = turn(this.dir, -1);
   }
 }
 
@@ -195,37 +121,139 @@ class Cube {
   south;
   east;
   west;
+  #history = [];
 
-  rotateNorth() {
+  constructor(up) {
+    this.up = up;
+    this.#positionFaces();
+  }
+
+  rollNorth() {
     const up = this.up;
     this.up = this.south;
     this.south = this.down;
     this.down = this.north;
     this.north = up;
+
+    this.down?.rotate();
+    this.down?.rotate();
+    this.north?.rotate();
+    this.north?.rotate();
+    this.east?.rotate();
+    this.west?.rotateCounter();
+
+    this.#history.push('rollSouth');
   }
 
-  rotateSouth() {
+  rollSouth() {
     const up = this.up;
     this.up = this.north;
     this.north = this.down;
     this.down = this.south;
     this.south = up;
+
+    this.up?.rotate();
+    this.up?.rotate();
+    this.north?.rotate();
+    this.north?.rotate();
+    this.east?.rotate();
+    this.west?.rotateCounter();
+
+    this.#history.push('rollNorth');
   }
 
-  rotateWest() {
+  rollWest() {
     const up = this.up;
     this.up = this.east;
     this.east = this.down;
     this.down = this.west;
     this.west = up;
+
+    this.up?.rotate();
+    this.down?.rotate();
+    this.north?.rotate();
+    this.south?.rotateCounter();
+    this.east?.rotate();
+    this.west?.rotate();
+
+    this.#history.push('rollEast');
   }
 
-  rotateEast() {
+  rollEast() {
     const up = this.up;
     this.up = this.west;
     this.west = this.down;
     this.down = this.east;
     this.east = up;
+
+    this.up?.rotateCounter();
+    this.down?.rotateCounter();
+    this.north?.rotateCounter();
+    this.south?.rotate();
+    this.east?.rotateCounter();
+    this.west?.rotateCounter();
+
+    this.#history.push('rollWest');
+  }
+
+  spin() {
+    const west = this.west;
+    this.west = this.south;
+    this.south = this.east;
+    this.east = this.north;
+    this.north = west;
+
+    this.up?.rotate();
+    this.down?.rotateCounter();
+
+    this.#history.push('spinCounter');
+  }
+
+  spinCounter() {
+    const west = this.west;
+    this.west = this.north;
+    this.north = this.east;
+    this.east = this.south;
+    this.south = west;
+
+    this.up?.rotateCounter();
+    this.down?.rotate();
+
+    this.#history.push('spin');
+  }
+
+  #unroll() {
+    this.#history.length && this[this.#history.pop()]();
+    this.#history.pop();
+  }
+
+  #positionFaces() {
+    if (this.length === 6) {
+      this.#history = [];
+      return;
+    }
+
+    if (this.up.left && !this.west) {
+      this.west = this.up.left;
+      this.west.rotate();
+      this.rollEast();
+    } else if (this.up.up && !this.north) {
+      this.north = this.up.up;
+      this.north.rotate();
+      this.north.rotate();
+      this.rollSouth();
+    } else if (this.up.right && !this.east) {
+      this.east = this.up.right;
+      this.east.rotateCounter();
+      this.rollWest();
+    } else if (this.up.down && !this.south) {
+      this.south = this.up.down;
+      this.rollNorth();
+    } else {
+      this.#unroll();
+    }
+
+    this.#positionFaces();
   }
 
   get length() {
@@ -259,92 +287,13 @@ const cubeSize = nodes.map(r => r.filter(Boolean).length).reduce((min, r) => Mat
 let loc = nodes.find(Boolean).find(Boolean);
 let dir = RIGHT;
 
-const cubeView = {
-  up: new Face(loc)
-};
-
-// Find all connected sides starting from the top, keep looping until we have all 6 sides
-
-// Grab all the nodes in a particular size, flipping if needed to arrange side
-// const buildCube = face => {
-//   if (face.done) {
-//     return;
-//   }
-
-//   // Connect below face to left/right faces
-//   if (face.down) {
-//     if (face.right && !face.down.right) {
-//       face.down.connectToFace('right', face.right, 'down');
-//     }
-//     if (face.left && !face.down.left) {
-//       face.down.connectToFace('left', face.left, 'down');
-//     }
-//   }
-//   // Connect above face to left/right faces
-//   if (face.up) {
-//     if (face.right && !face.up.right) {
-//       face.up.connectToFace('right', face.right, 'up');
-//     }
-//     if (face.left && !face.up.left) {
-//       face.up.connectToFace('left', face.left, 'up');
-//     }
-//   }
-//   // Connect opposite face to the left to above/below faces
-//   if (face.left?.left) {
-//     if (!face.left?.up && face.up && !face.left.left.up) {
-//       face.left.left.connectToFace('up', face.up, 'up');
-//     }
-//     if (!face.left?.down && face.down && !face.left.left.down) {
-//       face.left.left.connectToFace('down', face.down, 'down');
-//     }
-//   }
-//   // Connect opposite face to the right to above/below faces
-//   if (face.right?.right) {
-//     if (!face.right?.up && face.up && !face.right.right.up) {
-//       face.right.right.connectToFace('up', face.up, 'up');
-//     }
-//     if (!face.right?.down && face.down && !face.right.right.down) {
-//       face.right.right.connectToFace('down', face.down, 'down');
-//     }
-//   }
-//   // Connect opposite face above to left/right faces
-//   if (face.up?.up) {
-//     if (!face.up?.left && face.left && !face.up.up.left) {
-//       face.up.up.connectToFace('left', face.left, 'left');
-//     }
-//     if (!face.up?.right && face.right && !face.up.up.right) {
-//       face.up.up.connectToFace('right', face.right, 'right');
-//     }
-//   }
-//   // Connect opposite face below to left/right faces
-//   if (face.down?.down) {
-//     if (!face.down?.left && face.left && !face.down.down.left) {
-//       face.down.down.connectToFace('left', face.left, 'left');
-//     }
-//     if (!face.down?.right && face.right && !face.down.down.right) {
-//       face.down.down.connectToFace('right', face.right, 'right');
-//     }
-//   }
-
-//   face.done = true;
-
-//   // Skip up since we started at the top
-//   face.right && buildCube(face.right);
-//   face.down && buildCube(face.down);
-//   face.left && buildCube(face.left);
-// };
-
-// Build the cube off the starting location
-// buildCube(new Face(loc));
-
-// 1 for right, -1 for left
-const turn = d => (dir + d > 3 ? 0 : dir + d < 0 ? 3 : dir + d);
+const cube = new Cube(new Face(loc));
 
 // Start walking
 path.forEach(a => {
   // Turn
   if (['L', 'R'].includes(a)) {
-    dir = turn(a === 'L' ? -1 : 1);
+    dir = turn(dir, a === 'L' ? -1 : 1);
   }
   // Walk
   else {
@@ -360,4 +309,4 @@ path.forEach(a => {
 
 console.log((loc.y + 1) * 1000 + (loc.x + 1) * 4 + dir);
 
-// Answer: 144244
+// Answer:
