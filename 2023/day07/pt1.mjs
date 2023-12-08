@@ -40,4 +40,3 @@ console.log(
     .flat()
     .reduce((sum, win) => sum + win, 0)
 );
-debugger;
