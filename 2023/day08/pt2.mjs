@@ -7,10 +7,8 @@ const dirs = inputLines
   .map(dir => 'LR'.indexOf(dir));
 inputLines.shift();
 
-const nextDir = (() => {
-  let i = Infinity;
-  return () => dirs[(i = i + 1 >= dirs.length ? 0 : i + 1)];
-})();
+let i = Infinity;
+const nextDir = () => dirs[(i = i + 1 >= dirs.length ? 0 : i + 1)];
 
 const nodes = inputLines
   .map(line => [.../^(\w+) = \((\w+), (\w+)\)$/.exec(line).slice(1)])
@@ -18,13 +16,25 @@ const nodes = inputLines
 
 let ghosts = Object.entries(nodes)
   .filter(([k, _]) => k.endsWith('A'))
-  .map(([_, v]) => v);
-let steps = 1;
-let dir = nextDir();
-while (!ghosts.every(ghost => ghost[dir].endsWith('Z'))) {
-  steps++;
-  ghosts = ghosts.map(ghost => nodes[ghost[dir]]);
-  dir = nextDir();
-  Date.now() % 10000 === 0 && console.log({ steps });
-}
-console.log(steps);
+  .map(([_, v]) => v)
+  .map(ghost => {
+    i = Infinity;
+    let steps = 1;
+    let dir = nextDir();
+
+    while (!ghost[dir].endsWith('Z')) {
+      steps++;
+      ghost = nodes[ghost[dir]];
+      dir = nextDir();
+    }
+
+    return steps;
+  });
+
+const lcm = (...arr) => {
+  const gcd = (x, y) => (!y ? x : gcd(y, x % y));
+  const _lcm = (x, y) => (x * y) / gcd(x, y);
+  return [...arr].reduce((a, b) => _lcm(a, b));
+};
+
+console.log(lcm(...ghosts));
