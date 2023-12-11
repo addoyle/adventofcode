@@ -148,6 +148,3 @@ console.log(
     .map(row => row.filter((pipe, i) => i % 2 === 0 && pipe === '#').length)
     .reduce((sum, n) => sum + n, 0)
 );
-
-// console.log(paddedLoop.map(row => row.join('')).join('\n'));
-debugger;
