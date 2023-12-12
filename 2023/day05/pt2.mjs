@@ -30,16 +30,13 @@ class Node {
   }
 
   getRanges(key, len, ranges = []) {
-    if (len <= 0) {
-      return [];
-    }
-
     const addRange = (lower, upper, action = (k, l) => ranges.push([k, l])) => {
       if (len > 0 && key >= lower && key < upper) {
-        const end = Math.min(upper, key + len);
-        len = end - key;
-        action(key, len);
-        key = end;
+        const segKey = key;
+        key = Math.min(upper, key + len);
+        const segLen = key - segKey;
+        len -= segLen;
+        action(segKey, segLen);
       }
     };
 
@@ -61,7 +58,7 @@ class Node {
       addRange(this.src + this.len, Infinity);
     }
 
-    return ranges;
+    return [...new Set(ranges)];
   }
 }
 
