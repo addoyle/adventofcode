@@ -6,7 +6,8 @@ const springs = lines('./sample.txt')
     // record: spring[0].match(/(#+)|(\?+)|(\.+)/g),
     record: spring[0],
     groups: spring[1].split(',').map(n => parseInt(n)),
-    perms: 0
+    perms: 0,
+    tempPerms: []
   }));
 
 const buildPerm = (spring, perm = '', r = 0, g = 0) => {
@@ -14,6 +15,7 @@ const buildPerm = (spring, perm = '', r = 0, g = 0) => {
     // is valid?
     if (!perm.includes('?') && g >= spring.groups.length) {
       spring.perms++;
+      spring.tempPerms.push(perm);
     }
     return;
   }
@@ -45,6 +47,31 @@ const buildPerm = (spring, perm = '', r = 0, g = 0) => {
   // block starts with # and won't get too big
   if (block[0] === '#' && block[grp] !== '#') {
     return buildPerm(spring, perm + '#'.repeat(grp) + '.', r + grp + 1, g + 1);
+  }
+
+  // block ends with a #, check if there's more #'s after it
+  if (block[grp - 1] === '#') {
+    const firstBrkn = block.indexOf('#');
+    const fromBrkn = block.substring(firstBrkn).match(/^#+/)[0];
+    // make sure it's not too big
+    if (fromBrkn.length <= grp) {
+      // same size, mark as broken and continue
+      if (fromBrkn.length === grp) {
+        buildPerm(spring, perm + '.'.repeat(grp - firstBrkn) + fromBrkn + '.', r + grp + firstBrkn + 2, g + 1);
+      }
+      // smaller, add possibilities to stack
+      else {
+        for (let i = r; i < Math.min(block.length - grp, grp - firstBrkn) - 1; i++) {
+          buildPerm(spring, perm + '.'.repeat(i) + '#'.repeat(grp) + '.', r + grp + i + 1, g + 1);
+        }
+      }
+    }
+    return;
+  }
+
+  // Some combination of ?'s and #'s left in block
+  for (let i = r; i < block.length - grp; i++) {
+    buildPerm(spring, perm + '.'.repeat(i) + '#'.repeat(grp) + '.', r + grp + i + 1, g + 1);
   }
 };
 
