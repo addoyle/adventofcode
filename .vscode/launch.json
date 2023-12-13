@@ -10,7 +10,7 @@
       "name": "Launch Program",
       "skipFiles": ["<node_internals>/**"],
       "cwd": "${workspaceFolder}/2023/day11",
-      "program": "${workspaceFolder}/2023/day11/pt1_simpler.mjs"
+      "program": "${workspaceFolder}/2023/day11/pt2.mjs"
     }
   ]
 }
