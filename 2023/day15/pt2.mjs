@@ -29,4 +29,3 @@ console.log(
     .flat()
     .reduce((sum, n) => sum + n, 0)
 );
-debugger;
