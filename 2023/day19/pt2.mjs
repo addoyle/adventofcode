@@ -1,7 +1,5 @@
 import { lines } from '../../common.mjs';
 
-const max = 4000;
-
 const [workflows, parts] = (([workflows, parts]) => [
   workflows.reduce(
     (o, w) => ({
@@ -33,10 +31,8 @@ const [workflows, parts] = (([workflows, parts]) => [
 const ranges = [];
 
 // 167409079868000
-// 44912717000496
-// 16811877338644
-// 15197969492500
-// 1583726285857872
+// 45028560396500
+// 41852269967
 let combo = 0;
 const findCombos = (part, flowKey = 'in') => {
   const foo = r => r.join(',');
@@ -54,7 +50,15 @@ const findCombos = (part, flowKey = 'in') => {
       .map(([l, u]) => u - l + 1)
       .reduce((p, v) => p * v, 1);
     combo += prod;
-    console.log('added', { prod, combo });
+    console.log('added', {
+      prod,
+      combo,
+      expected:
+        (part.x[1] - part.x[0] + 1) *
+        (part.m[1] - part.m[0] + 1) *
+        (part.a[1] - part.a[0] + 1) *
+        (part.s[1] - part.s[0] + 1)
+    });
     return;
   }
   if (flowKey === 'R') {
@@ -117,6 +121,6 @@ const findCombos = (part, flowKey = 'in') => {
   }
 };
 
-findCombos({ x: [1, 4000], m: [1, 4000], a: [1, 4000], s: [1, 4000] });
+findCombos('xmas'.split('').reduce((o, k) => ({ ...o, [k]: [1, 4000] }), {}));
 
 console.log(167409079868000);
