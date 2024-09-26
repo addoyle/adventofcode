@@ -1,80 +1,52 @@
 import { lines } from '../../common.mjs';
+import { eigs } from 'mathjs';
 
-const island = lines('./sample.txt').map(row => row.split(''));
-const start = [0, island[0].indexOf('.')];
-const firstStep = [start[0] + 1, start[1]];
-let max = 0;
+// const bounds = [200000000000000, 400000000000000];
+const bounds = [7, 27];
 
-const printPath = been =>
-  console.log(
-    island
-      .map((row, y) =>
-        row.map((f, x) => (been.has([y, x].toString()) ? 'O' : f)).join('')
-      )
-      .join('\n')
-  );
+const vectors = lines('./sample.txt')
+  .map(line => line.split(' @ ').map(p => p.split(', ').map(n => parseInt(n))))
+  .map(([p, v]) => ({ p, v }));
 
-const spurs = {};
-// Build spurs
-const spur = (pos, step, startPos = pos, startStep = step, steps = 0) => {
-  // Spur already exists, skip
-  if (spurs[`${pos}`] && spurs[`${pos}`][`${step}`]) return;
+// Get average starting point
+const avg = vectors[0].p.reduce(
+  (o, _, i) => [
+    ...o,
+    vectors.reduce((sum, v) => sum + v.p[i], 0) / vectors.length
+  ],
+  []
+);
 
-  const pSteps = [
-    [step[0] - 1, step[1]],
-    [step[0] + 1, step[1]],
-    [step[0], step[1] - 1],
-    [step[0], step[1] + 1]
-  ].filter(
-    s =>
-      // In bounds
-      s[0] >= 0 &&
-      s[0] < island.length &&
-      // Not pos
-      !(s[0] === pos[0] && s[1] === pos[1]) &&
-      // Not a tree
-      island[s[0]][s[1]] !== '#'
-  );
+// Covariance matrix
+const covMatrix = vectors.reduce(
+  (m, v) => {
+    const d = avg.map((a, i) => v.p[i] - a);
 
-  // No fork, keep moving
-  if (pSteps.length === 1) {
-    spur(step, pSteps[0], startPos, startStep, steps + 1);
-  }
-  // Fork reached, add to spurs and keep moving
-  else {
-    spurs[`${startPos}`] = {
-      ...spurs[`${startPos}`],
-      [`${startStep}`]: {
-        steps,
-        start: startPos,
-        key: `${startPos}-${startStep}`,
-        end: step
-      }
-    };
+    v.p.forEach((_, i) =>
+      v.p.forEach((_, j) => {
+        m[i][j] ??= 0;
+        m[i][j] += d[i] * d[j];
+      })
+    );
 
-    pSteps.forEach(ps => spur(step, ps));
-  }
-};
-spur(start, firstStep); // Start spurring
-const startSpur = spurs[`${start}`][`${firstStep}`];
+    return m;
+  },
+  [[], [], []]
+);
 
-const walk = () => {
-  let gen = [{ spur: startSpur, been: { [`${startSpur.start}`]: startSpur } }];
-  while (gen.length) {
-    gen = gen
-      .map(path =>
-        Object.values(spurs[`${path.spur.end}`])
-          .filter(spur => !path.been[`${spur.end}`])
-          .map(spur => ({
-            spur,
-            been: { ...path.been, [`${spur.start}`]: spur }
-          }))
-          .flat()
-      )
-      .flat();
-  }
-};
+// Normalize
+covMatrix.forEach((r, i) =>
+  r.forEach((_, j) => {
+    covMatrix[i][j] /= vectors.length;
+  })
+);
 
-walk();
+const { values: eigenvalues, eigenvectors } = eigs(covMatrix);
+const maxEigenvalue = Math.max(...eigenvalues);
 
-console.log(max);
+const maxIndex = eigenvalues.findIndex(val => val === maxEigenvalue);
+
+// Direction vector is the eigenvector corresponding to the largest eigenvalue
+const direction = eigenvectors.map(ev => ev.vector[maxIndex]);
+
+console.log(direction);
