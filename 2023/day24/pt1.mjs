@@ -6,20 +6,20 @@ const vectors = lines('./input.txt')
   .map(line => line.split(' @ ').map(p => p.split(', ').map(n => parseInt(n))))
   .map(([[px, py, pz], [vx, vy, vz]]) => ({ px, py, pz, vx, vy, vz }));
 
-const intersect = (v1, v2) => {
-  const d = v1.vx * v2.vy - v1.vy * v2.vx;
+const intersect = (a, b) => {
+  const d = a.vx * b.vy - a.vy * b.vx;
 
   // Parallel
   if (d === 0) {
     return null;
   }
 
-  const t = ((v2.px - v1.px) * v2.vy - (v2.py - v1.py) * v2.vx) / d;
-  const s = ((v2.px - v1.px) * v1.vy - (v2.py - v1.py) * v1.vx) / d;
+  const t = ((b.px - a.px) * b.vy - (b.py - a.py) * b.vx) / d;
+  const s = ((b.px - a.px) * a.vy - (b.py - a.py) * a.vx) / d;
 
   return {
-    x: v1.px + t * v1.vx,
-    y: v1.py + t * v1.vy,
+    x: a.px + t * a.vx,
+    y: a.py + t * a.vy,
     t,
     s
   };
