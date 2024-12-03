@@ -1,17 +1,26 @@
 import { lines } from '../../common.mjs';
 
-const isSafe = (report, retry = true) => {
-  let good = true;
-  for (let i = 0, level = report[0], prev; i < report.length; i++, prev = level, level = report[i]) {
-    if (prev !== undefined && (level - prev < 1 || level - prev > 3)) {
-      good = false;
-    }
-  }
-  return good || (retry && report.some((_, i) => isSafe(report.toSpliced(i, 1), false)));
-};
+let doIt = true;
 
 console.log(
   lines('./input.txt')
-    .map(line => line.split(' ').map(n => parseInt(n)))
-    .filter(report => isSafe(report) || isSafe(report.toReversed())).length
+    .join('')
+    .match(/((?<=mul\()\d+,\d+(?=\)))|(do\(\))|(don't\(\))/g)
+    .filter(instruct => {
+      if (instruct === 'do()') {
+        doIt = true;
+      } else if (instruct === "don't()") {
+        doIt = false;
+      } else {
+        return doIt; // filter based on status of doIt
+      }
+      return false; // don't add do and don't
+    })
+    .map(mul =>
+      mul
+        .split(',')
+        .map(n => parseInt(n))
+        .reduce((prod, n) => prod * n, 1)
+    )
+    .reduce((sum, n) => sum + n, 0)
 );
