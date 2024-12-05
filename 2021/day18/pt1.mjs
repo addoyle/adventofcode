@@ -1,14 +1,34 @@
 import { lines } from '../../common.mjs';
 
-const reduce = ([a, b], ancs = [[a, b]]) => {
+const reduce = (num, ancs = [num]) => {
   // Explode
   if (ancs.length >= 4) {
-    console.log([a, b]);
-    if (Array.isArray(a)) {
+    // Left side explodes
+    if (Array.isArray(num[0])) {
+      if (Array.isArray(num[1])) {
+      }
+      // Right side is a number, explode into it
+      else {
+        num[1] += num[0][1];
+      }
+      // Exploding done
+      num[0] = 0;
     }
+    // Right side explodes
+    else {
+      if (Array.isArray(num[0])) {
+      }
+      // Left side is a number, explode into it
+      else {
+        num[0] += num[1][0];
+      }
+      // Exploding done
+      num[1] = 0;
+    }
+    return num;
   }
 
-  return [a, b].map(n => (Array.isArray(n) ? reduce(n, [n, ...ancs]) : n));
+  return num.map(n => (Array.isArray(n) ? reduce(n, [n, ...ancs]) : n));
 };
 
 // const homework = lines('./sample1.txt')
@@ -19,8 +39,8 @@ const reduce = ([a, b], ancs = [[a, b]]) => {
 //     return s;
 //   });
 // console.log(JSON.stringify(homework));
-console.log(reduce([[[[[9, 8], 1], 2], 3], 4]));
-// console.log(reduce([7, [6, [5, [4, [3, 2]]]]]));
+console.log(JSON.stringify(reduce([[[[[9, 8], 1], 2], 3], 4])));
+console.log(JSON.stringify(reduce([7, [6, [5, [4, [3, 2]]]]])));
 // console.log(reduce([[6, [5, [4, [3, 2]]]], 1]));
 // console.log(
 //   reduce([
