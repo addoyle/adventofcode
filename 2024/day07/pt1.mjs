@@ -1,7 +1,7 @@
 import { lines } from '../../common.mjs';
 
 console.log(
-  lines('./sample.txt')
+  lines('./input.txt')
     .map(line => line.split(': '))
     .map(([result, terms]) => [parseInt(result), terms.split(' ').map(t => parseInt(t))])
     .filter(([result, terms]) =>
