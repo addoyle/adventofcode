@@ -1,42 +1,60 @@
 import { lines } from '../../common.mjs';
 
-let bounds = {};
+const blank = length => Array.from({ length }, () => undefined);
 
-const inBounds = ([x, y]) => x >= 0 && x < bounds.x && y >= 0 && y < bounds.y;
+let id = 0;
+const blocks = lines('./input.txt')[0]
+  .split('')
+  .map(n => parseInt(n))
+  .reduce((blocks, indicator, i) => {
+    if (i % 2) {
+      blocks.push(blank(indicator));
+    } else {
+      blocks.push(Array(indicator).fill(id++));
+    }
+    return blocks;
+  }, []);
 
-console.log(
-  Object.values(
-    lines('./input.txt').reduce((o, line, y, arr) => {
-      bounds.y = arr.length;
-      [...line].forEach((c, x, ln) => {
-        bounds.x = ln.length;
-        if (c !== '.') {
-          o[c] ??= [];
-          o[c].push([x, y]);
-        }
-      });
-      return o;
-    }, {})
-  ).reduce((s, pts) => {
-    pts.forEach(a => {
-      pts.forEach(b => {
-        if (a.join(',') !== b.join(',')) {
-          const d = a.map((v, i) => b[i] - v);
-          let pt = [...a];
-          while (inBounds(pt)) {
-            s.add(pt.join(','));
-            pt[0] -= d[0];
-            pt[1] -= d[1];
-          }
-          pt = [...b];
-          while (inBounds(pt)) {
-            s.add(pt.join(','));
-            pt[0] += d[0];
-            pt[1] += d[1];
-          }
-        }
-      });
-    });
-    return s;
-  }, new Set())
-);
+for (let i = blocks.length - 1; i > 1; i--) {
+  const block = blocks[i];
+
+  // Empty block or free space block, skip
+  if (!block.length || block[0] === undefined) {
+    continue;
+  }
+
+  // Attempt to find a free space big enough
+  for (let j = 0; j < i; j++) {
+    const b = blocks[j];
+
+    // Non-empty block or too small
+    if (b[0] !== undefined || b.length < block.length) {
+      continue;
+    }
+
+    // Clear block and combine space around it
+    blocks[i] = blank(block.length);
+    // Combine with space before it
+    if (blocks[i - 1] && blocks[i - 1][0] === undefined) {
+      blocks[i - 1] = blank(blocks[i - 1].length + block.length); // expand free space
+      blocks.splice(i, 1);
+      i--;
+    }
+    // Combine with space after it
+    if (blocks[i + 1] && blocks[i + 1][0] === undefined) {
+      blocks[i] = blank(blocks[i].length + blocks[i + 1].length);
+      blocks.splice(i + 1, 1);
+    }
+
+    // Insert into free space
+    blocks[j] = block;
+    const diff = b.length - block.length;
+    if (diff > 0) {
+      blocks.splice(j + 1, 0, blank(diff));
+      i++;
+    }
+    break;
+  }
+}
+
+console.log(blocks.flat().reduce((checksum, n, i) => (checksum += (n ?? 0) * i)));
