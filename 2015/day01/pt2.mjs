@@ -1,17 +1,10 @@
-import { intLines } from '../../common.mjs';
+import { lines } from '../../common.mjs';
 
-const input = intLines('input');
-let p;
-let numIncreases = 0;
-
-input.forEach((v, i) => {
-  if (i < 2) return;
-
-  const window = v + input[i - 1] + input[i - 2];
-  numIncreases += window > p ? 1 : 0;
-  p = window;
-});
-
-console.log(numIncreases);
-
-// Correct answer: 1728
+let sum = 0;
+for (const [i, c] of Object.entries(lines('./input.txt')[0].split(''))) {
+  sum += (c === '(') - (c === ')');
+  if (sum < 0) {
+    console.log(parseInt(i) + 1);
+    break;
+  }
+}
