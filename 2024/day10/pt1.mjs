@@ -1,12 +1,12 @@
 import { lines, StackSet } from '../../common.mjs';
 
-const map = lines('./sample1.txt').map(line => line.split('').map(n => (isNaN(n) ? -Infinity : parseInt(n))));
+const map = lines('./input.txt').map(line => line.split('').map(n => (isNaN(n) ? -Infinity : parseInt(n))));
 
 const toId = ([x, y]) => y * map.length + x;
 const toPt = id => [id % map.length, Math.floor(id / map.length)];
 
 // Find trailheads
-const paths = map.reduce((trailheads, row, y) => {
+let gen = map.reduce((trailheads, row, y) => {
   row.forEach((height, x) => {
     if (height === 0) {
       trailheads.push(new StackSet([toId([x, y])]));
@@ -17,9 +17,8 @@ const paths = map.reduce((trailheads, row, y) => {
 
 // Find paths to 9 using BFS
 for (let h = 1; h <= 9; h++) {
-  // TODO: Record only head and tail, not all possible paths
-
-  paths.forEach((path, i) => {
+  const nextGen = [];
+  gen.forEach((path, i) => {
     const [x, y] = toPt(path.top);
     const neighbors = [
       [x - 1, y],
@@ -31,21 +30,12 @@ for (let h = 1; h <= 9; h++) {
       .map(toId)
       .filter(id => !path.has(id));
 
-    // No valid step, remove
-    if (!neighbors.length) {
-      paths.splice(i, 1);
-      return;
-    }
-
-    // More than one, add additional paths
-    if (neighbors.length > 1) {
-      neighbors.slice(1).forEach(n => {
-        paths.push(new StackSet([...path, n]));
-      });
-    }
-
-    // Add step to original path
-    path.push(neighbors[0]);
+    // Add path for each valid neighbor
+    neighbors.forEach(n => {
+      nextGen.push(new StackSet([...path, n]));
+    });
   });
+  gen = nextGen;
 }
-debugger;
+
+console.log(new Set(gen.map(path => [path.values().next().value, path.top].join(','))).size);

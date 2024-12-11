@@ -1,60 +1,41 @@
-import { lines } from '../../common.mjs';
+import { lines, StackSet } from '../../common.mjs';
 
-const blank = length => Array.from({ length }, () => undefined);
+const map = lines('./input.txt').map(line => line.split('').map(n => (isNaN(n) ? -Infinity : parseInt(n))));
 
-let id = 0;
-const blocks = lines('./input.txt')[0]
-  .split('')
-  .map(n => parseInt(n))
-  .reduce((blocks, indicator, i) => {
-    if (i % 2) {
-      blocks.push(blank(indicator));
-    } else {
-      blocks.push(Array(indicator).fill(id++));
+const toId = ([x, y]) => y * map.length + x;
+const toPt = id => [id % map.length, Math.floor(id / map.length)];
+
+// Find trailheads
+let gen = map.reduce((trailheads, row, y) => {
+  row.forEach((height, x) => {
+    if (height === 0) {
+      trailheads.push(new StackSet([toId([x, y])]));
     }
-    return blocks;
-  }, []);
+  });
+  return trailheads;
+}, []);
 
-for (let i = blocks.length - 1; i > 1; i--) {
-  const block = blocks[i];
+// Find paths to 9 using BFS
+for (let h = 1; h <= 9; h++) {
+  const nextGen = [];
+  gen.forEach((path, i) => {
+    const [x, y] = toPt(path.top);
+    const neighbors = [
+      [x - 1, y],
+      [x + 1, y],
+      [x, y - 1],
+      [x, y + 1]
+    ]
+      .filter(([x, y]) => map[y]?.[x] !== undefined && map[y][x] === h)
+      .map(toId)
+      .filter(id => !path.has(id));
 
-  // Empty block or free space block, skip
-  if (!block.length || block[0] === undefined) {
-    continue;
-  }
-
-  // Attempt to find a free space big enough
-  for (let j = 0; j < i; j++) {
-    const b = blocks[j];
-
-    // Non-empty block or too small
-    if (b[0] !== undefined || b.length < block.length) {
-      continue;
-    }
-
-    // Clear block and combine space around it
-    blocks[i] = blank(block.length);
-    // Combine with space before it
-    if (blocks[i - 1] && blocks[i - 1][0] === undefined) {
-      blocks[i - 1] = blank(blocks[i - 1].length + block.length); // expand free space
-      blocks.splice(i, 1);
-      i--;
-    }
-    // Combine with space after it
-    if (blocks[i + 1] && blocks[i + 1][0] === undefined) {
-      blocks[i] = blank(blocks[i].length + blocks[i + 1].length);
-      blocks.splice(i + 1, 1);
-    }
-
-    // Insert into free space
-    blocks[j] = block;
-    const diff = b.length - block.length;
-    if (diff > 0) {
-      blocks.splice(j + 1, 0, blank(diff));
-      i++;
-    }
-    break;
-  }
+    // Add path for each valid neighbor
+    neighbors.forEach(n => {
+      nextGen.push(new StackSet([...path, n]));
+    });
+  });
+  gen = nextGen;
 }
 
-console.log(blocks.flat().reduce((checksum, n, i) => (checksum += (n ?? 0) * i)));
+console.log(gen.length);
