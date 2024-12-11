@@ -7,10 +7,13 @@ const blocks = lines('./input.txt')[0]
   .split('')
   .map(n => parseInt(n))
   .reduce((blocks, indicator, i) => {
-    if (i % 2) {
-      blocks.push(blank(indicator));
-    } else {
+    if (indicator === 0) {
+      return blocks;
+    }
+    if (i % 2 === 0) {
       blocks.push(Array(indicator).fill(id++));
+    } else {
+      blocks.push(blank(indicator));
     }
     return blocks;
   }, []);
@@ -32,7 +35,15 @@ for (let i = blocks.length - 1; i > 1; i--) {
       continue;
     }
 
-    // Clear block and combine space around it
+    // Insert into free space
+    blocks[j] = block;
+    const diff = b.length - block.length;
+    if (diff > 0) {
+      blocks.splice(j + 1, 0, blank(diff));
+      i++;
+    }
+
+    // Clear old block's location and combine space around it
     blocks[i] = blank(block.length);
     // Combine with space before it
     if (blocks[i - 1] && blocks[i - 1][0] === undefined) {
@@ -46,15 +57,8 @@ for (let i = blocks.length - 1; i > 1; i--) {
       blocks.splice(i + 1, 1);
     }
 
-    // Insert into free space
-    blocks[j] = block;
-    const diff = b.length - block.length;
-    if (diff > 0) {
-      blocks.splice(j + 1, 0, blank(diff));
-      i++;
-    }
     break;
   }
 }
 
-console.log(blocks.flat().reduce((checksum, n, i) => (checksum += (n ?? 0) * i)));
+console.log(blocks.flat().reduce((checksum, n, i) => (checksum += (n ?? 0) * i), 0));
