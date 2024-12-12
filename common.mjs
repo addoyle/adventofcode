@@ -8,7 +8,7 @@ export { lines, intLines };
 export class ArraySet {
   #map;
 
-  constructor(values) {
+  constructor(values = []) {
     this.#map = new Map();
     for (const value of values) {
       this.add(value);
@@ -16,7 +16,10 @@ export class ArraySet {
   }
 
   add(value) {
-    this.#map.set(JSON.stringify(value), value);
+    if (!Array.isArray(value)) {
+      throw new Error(`Value is not an array: ${typeof value}`);
+    }
+    this.#map.set(JSON.stringify(value), Object.freeze(value));
     return this;
   }
 
@@ -51,7 +54,7 @@ export class ArraySet {
   }
 
   toString() {
-    return `StackSet(${this.size}) {${[`size: ${this.size}`, ...this.#map.keys()].join(', ')}}`;
+    return `ArraySet(${this.size}) {${[`size: ${this.size}`, ...this.#map.keys()].join(', ')}}`;
   }
 }
 
