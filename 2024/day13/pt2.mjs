@@ -1,57 +1,54 @@
 import { lines } from '../../common.mjs';
 
-let gen = lines('./sample.txt')[0].split(' ');
-const memo = {};
+const clawMachines = lines('./input.txt').reduce((machines, line, i) => {
+  if (i % 4 === 0) {
+    machines.push({});
+  }
+  if (line) {
+    const machine = machines.at(-1);
+    const [button, x, y] = [.../^(?:Button )?(\w+): X[=+](\d+), Y[=+](\d+)$/.exec(line)].slice(1);
+    machine[button.toLowerCase()] = { x: parseInt(x), y: parseInt(y) };
+  }
+  return machines;
+}, []);
 
-const fiveGens = rock => {
-  memo[rock] ??= rock
-    .split(',')
-    .map(rk => {
-      if (memo[rk]) {
-        return memo[rk];
-      }
+// Add 10000000000000 to each prize
+clawMachines.forEach(machine => {
+  machine.prize.x += 10000000000000;
+  machine.prize.y += 10000000000000;
+});
 
-      let gen = [rk];
+const gcd = (a, b) => (b === 0 ? a : gcd(b, a % b));
 
-      for (let i = 0; i < 5; i++) {
-        gen = gen.reduce((rocks, rock) => {
-          if (rock === '0') {
-            rocks.push('1');
-          } else if (rock.length % 2 === 0) {
-            rocks.push(
-              ...[rock.slice(0, rock.length / 2), rock.slice(rock.length / 2)].map(n => n.replace(/^0+/, '') || '0')
-            );
-          } else {
-            rocks.push(`${parseInt(rock) * 2024}`);
-          }
+console.log(
+  clawMachines
+    .map(({ a, b, prize }) => {
+      const gcdX = gcd(a.x, b.x);
+      const gcdY = gcd(a.y, b.y);
 
-          return rocks;
-        }, []);
-      }
+      const coeffsX = [a.x, b.x, prize.x];
+      const coeffsY = [a.y, b.y, prize.y];
 
-      memo[rk] = gen;
-      return gen;
+      coeffsX.forEach((c, i) => {
+        coeffsX[i] = c / gcdX;
+      });
+      coeffsY.forEach((c, i) => {
+        coeffsY[i] = c / gcdY;
+      });
+      const axs = [coeffsX[0] * coeffsY[1], coeffsX[2] * coeffsY[1]];
+      const ays = [coeffsY[0] * coeffsX[1], coeffsY[2] * coeffsX[1]];
+      const adiff = [axs[0] - ays[0], axs[1] - ays[1]];
+      const aPresses = adiff[1] / adiff[0];
+
+      const bxs = [coeffsX[1] * coeffsY[0], coeffsX[2] * coeffsY[0]];
+      const bys = [coeffsY[1] * coeffsX[0], coeffsY[2] * coeffsX[0]];
+      const bdiff = [bxs[0] - bys[0], bxs[1] - bys[1]];
+      const bPresses = bdiff[1] / bdiff[0];
+
+      return [aPresses, bPresses];
     })
-    .map(r => r.join(','));
-
-  return memo[rock];
-};
-
-for (let i = 0; i < 75 / 5; i++) {
-  gen = gen.reduce((rocks, rock) => {
-    // if (rock === '0') {
-    //   rocks.push('1');
-    // } else if (rock.length % 2 === 0) {
-    //   rocks.push(
-    //     ...[rock.slice(0, rock.length / 2), rock.slice(rock.length / 2)].map(n => n.replace(/^0+/, '') || '0')
-    //   );
-    // } else {
-    //   memo[rock] ??= `${parseInt(rock) * 2024}`;
-    //   rocks.push(memo[rock]);
-    // }
-    rocks.push(fiveGens(rock).join(','));
-
-    return rocks;
-  }, []);
-}
-console.log(gen.length);
+    .filter(buttons => buttons.every(b => Math.floor(b) === b))
+    .map(([a, b]) => 3 * a + b)
+    .reduce((sum, n) => sum + n)
+);
+debugger;
