@@ -1,105 +1,58 @@
-import { lines } from '../../common.mjs';
+import { ArraySet, lines } from '../../common.mjs';
 
-const dirMap = {
-  '^': [0, -1],
-  v: [0, 1],
-  '<': [-1, 0],
-  '>': [1, 0]
-};
-const objMap = {
-  '#': '##',
-  O: '[]',
-  '.': '..',
-  '@': '@.'
-};
-const [warehouse, directions] = (([warehouse, directions]) => [
-  warehouse.map(row => row.map(c => objMap[c].split('')).flat()),
-  directions.flat().map(d => dirMap[d])
-])(
-  lines('./input.txt').reduce(
-    (res, line) => {
-      if (line === '') {
-        res.push([]);
-        return res;
-      }
-      res.at(-1).push(line.split(''));
-      return res;
-    },
-    [[]]
-  )
+const DIM = 71;
+
+const coords = lines('./input.txt').map(line =>
+  line.split(',').map(n => parseInt(n))
 );
 
-let pos = {
-  x: warehouse.find(row => row.includes('@')).findIndex(c => c === '@'),
-  y: warehouse.findIndex(row => row.includes('@'))
+const isBlocked = len => {
+  const grid = Array.from({ length: DIM }, () =>
+    Array.from({ length: DIM }, () => '.')
+  );
+  coords.slice(0, len).forEach(([x, y]) => {
+    grid[y][x] = '#';
+  });
+
+  for (let gen = [[0, 0]], g = 0; gen.length; g++) {
+    const nextGen = new ArraySet();
+    for (const [x, y] of gen) {
+      // At the end
+      if (y === grid.length - 1 && x === grid[0].length - 1) {
+        return false;
+      }
+
+      [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1]
+      ]
+        .filter(([dx, dy]) => grid[y + dy]?.[x + dx] === '.')
+        .map(([dx, dy]) => [x + dx, y + dy])
+        .forEach(p => {
+          nextGen.add(p);
+          grid[p[1]][p[0]] = 'O';
+        });
+    }
+
+    gen = [...new ArraySet(nextGen)];
+  }
+  return true;
 };
 
-// Replace starting location
-warehouse[pos.y][pos.x] = '.';
-
-directions.forEach(([dx, dy]) => {
-  const step = { x: pos.x + dx, y: pos.y + dy };
-  const c = warehouse[step.y][step.x];
-
-  // Empty space, take step
-  if (c === '.') {
-    pos = step;
-  } else if ('[]'.includes(c)) {
-    // Horizontal pushing
-    if (dx !== 0) {
-      let box = { ...step };
-      do {
-        box.x += dx;
-        box.y += dy;
-      } while ('[]'.includes(warehouse[box.y][box.x]));
-
-      // Free space, scoot boxes
-      if (warehouse[box.y][box.x] === '.') {
-        warehouse[step.y].splice(box.x, 1);
-        warehouse[step.y].splice(step.x, 0, '.');
-        pos = step;
-      }
-    } else {
-      let rows = [[step.x, step.x + (c === '[' ? 1 : -1)]];
-
-      // Single box against edge, quit
-      if (rows[0].some(x => warehouse[step.y + dy][x] === '#')) {
-        return;
-      }
-
-      for (let row = step.y + dy; rows.at(-1).some(x => '[]'.includes(warehouse[row][x])); row += dy) {
-        // Encountered a wall, stop all pushing
-        if (rows.at(-1).some(x => warehouse[row][x] === '#')) {
-          return;
-        }
-        // At least one box is pushing another box, add all pushed boxes
-        rows.push([
-          ...new Set(
-            rows
-              .at(-1)
-              .filter(x => '[]'.includes(warehouse[row][x]))
-              .map(x => [x, x + (warehouse[row][x] === '[' ? 1 : -1)])
-              .flat()
-          )
-        ]);
-      }
-
-      // Double check last row
-      if (rows.at(-1).some(x => warehouse[step.y + rows.length * dy][x] === '#')) {
-        return;
-      }
-
-      // Scoot those boxes!
-      for (let y = step.y + rows.length * dy, row = rows.pop(); row; row = rows.pop(), y -= dy) {
-        row.forEach(x => {
-          const temp = warehouse[y][x];
-          warehouse[y][x] = warehouse[y - dy][x];
-          warehouse[y - dy][x] = rows.length > 1 ? temp : '.';
-        });
-      }
-      pos = step;
-    }
+// Check for blockage like a BST
+const binarySearch = (min = DIM, max = coords.length) => {
+  if (min === max) {
+    return min;
   }
-});
+  const mid = min + Math.floor((max - min) / 2);
+  if (isBlocked(mid)) {
+    return binarySearch(min, mid - 1);
+  } else {
+    return binarySearch(mid + 1, max);
+  }
+};
 
-console.log(warehouse.reduce((sum, row, y) => sum + row.reduce((s, c, x) => s + (c === '[' ? 100 * y + x : 0), 0), 0));
+console.log(coords[binarySearch()].join(','));
+debugger;

@@ -1,49 +1,53 @@
 import { ArraySet, lines } from '../../common.mjs';
 
-const grid = lines('./input.txt').map(line => line.split(''));
+const grid = Array.from({ length: 71 }, () =>
+  Array.from({ length: 71 }, () => '.')
+);
+lines('./input.txt')
+  .map(line => line.split(',').map(n => parseInt(n)))
+  .slice(0, 1024)
+  .forEach(([x, y]) => {
+    grid[y][x] = '#';
+  });
 
-const pos = [grid.findIndex(row => row.includes('S')), grid.find(row => row.includes('S')).indexOf('S')];
+for (let gen = [{ x: 0, y: 0, prev: null }], g = 0; gen.length; g++) {
+  let found = false;
+  const nextGen = [];
+  for (const p of gen) {
+    // At the end
+    if (p.y === grid.length - 1 && p.x === grid[0].length - 1) {
+      found = true;
+      break;
+    }
 
-let gen = [{ visited: new ArraySet([pos]), score: 0, dir: [0, 1], pos: [...pos] }];
-let minPathScore = Infinity;
-while (gen.length) {
-  gen = gen
-    .map(({ pos, dir, visited, score }) =>
-      [
+    nextGen.push(
+      ...[
         [-1, 0],
         [1, 0],
         [0, -1],
         [0, 1]
       ]
         .filter(
-          d =>
-            // Not blocked or visited
-            !visited.has([pos[0] + d[0], pos[1] + d[1]]) &&
-            grid[pos[0] + d[0]][pos[1] + d[1]] !== '#' &&
-            // Not the opposite direction
-            (dir[0] === 0 || dir[0] !== -d[0]) &&
-            (dir[1] === 0 || dir[1] !== -d[1])
-          // TODO: Add dead end detection
+          ([dx, dy]) =>
+            !(p.x + dx === p.prev?.x && p.y + dy === p.prev?.y) &&
+            grid[p.y + dy]?.[p.x + dx] === '.'
         )
-        .map(newDir => {
-          const newPos = [pos[0] + newDir[0], pos[1] + newDir[1]];
-          const newScore = score + 1 + (dir[0] !== newDir[0] || dir[1] !== newDir[1] ? 1000 : 0);
+        .map(([dx, dy]) => ({ x: p.x + dx, y: p.y + dy, prev: p }))
+    );
+  }
 
-          // Made it to the end
-          if (grid[pos[0] + newDir[0]][pos[1] + newDir[1]] === 'E') {
-            minPathScore = Math.min(minPathScore, newScore);
-            return null;
-          }
+  if (found) {
+    console.log(g);
+    break;
+  }
 
-          return {
-            pos: newPos,
-            score: newScore,
-            dir: newDir,
-            visited: new ArraySet([...visited, newPos])
-          };
-        })
-    )
-    .flat()
-    .filter(Boolean);
+  // Dedupe
+  const seen = new ArraySet();
+  gen = nextGen.filter(p => {
+    if (seen.has([p.x, p.y])) {
+      return false;
+    }
+    seen.add([p.x, p.y]);
+    return true;
+  });
 }
-debugger;
