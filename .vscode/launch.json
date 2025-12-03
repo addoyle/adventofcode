@@ -10,7 +10,8 @@
       "name": "Launch Program",
       "skipFiles": ["<node_internals>/**"],
       "cwd": "${fileDirname}",
-      "program": "${file}"
+      "program": "${file}",
+      "runtimeExecutable": "/Users/andy/.nvm/versions/node/v24.11.1/bin/node"
     }
   ]
 }
