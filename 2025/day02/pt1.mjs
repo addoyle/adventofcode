@@ -15,10 +15,7 @@ lines('./input.txt')[0]
         continue;
       }
 
-      const [left, right] = [
-        seq.slice(0, seq.length / 2),
-        seq.slice(seq.length / 2)
-      ];
+      const [left, right] = [seq.slice(0, seq.length / 2), seq.slice(seq.length / 2)];
 
       if (left === right) {
         invalidIds.add(n);

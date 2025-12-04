@@ -2,7 +2,7 @@ import { lines } from '../../common.mjs';
 
 const invalidIds = new Set();
 
-const chunk = (arr, n) => [...arr].map((_, i) => i % n === 0 ? arr.slice(i, i + n) : null).filter(Boolean);
+const chunk = (arr, n) => [...arr].map((_, i) => (i % n === 0 ? arr.slice(i, i + n) : null)).filter(Boolean);
 
 lines('./input.txt')[0]
   .split(',')

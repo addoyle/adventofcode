@@ -12,9 +12,10 @@ lines('./input.txt')
       return newPos;
     }
 
-    numZeroes += rot > 0
-      ? Math.floor(newPos / 100) - Math.floor(pos / 100)
-      : Math.floor((pos - 1) / 100) - Math.floor((newPos - 1) / 100);
+    numZeroes +=
+      rot > 0
+        ? Math.floor(newPos / 100) - Math.floor(pos / 100)
+        : Math.floor((pos - 1) / 100) - Math.floor((newPos - 1) / 100);
 
     return newPos;
   }, 50);
